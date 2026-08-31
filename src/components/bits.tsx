@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode, SVGProps } from 'react';
+import type { ButtonHTMLAttributes, InputHTMLAttributes, ReactNode, SVGProps } from 'react';
 import { qrMatrix } from '../lib/engine';
 import type { Person } from '../lib/engine';
 
@@ -201,3 +201,111 @@ export function Confetti({ count = 42 }: { count?: number }) {
 
 export const fmtMoney = (n: number) => `${n.toLocaleString('ru-RU')} ₽`;
 export const fmtScore = (n: number) => n.toFixed(2).replace('.', ',');
+
+/* ---------------- Кнопки / карточки / чипы ---------------- */
+
+type BtnProps = ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: 'gold' | 'ghost' | 'live' | 'mint' | 'dim';
+  size?: 'sm' | 'md' | 'lg';
+};
+export function Btn({ variant = 'gold', size = 'md', className = '', children, ...rest }: BtnProps) {
+  const v = {
+    gold: 'bg-gold-500 text-stage-950 hover:bg-gold-400 font-bold shadow-[0_6px_20px_-8px_rgba(232,163,61,0.7)]',
+    ghost: 'border border-stage-600 text-stage-100 hover:border-gold-500/70 hover:text-gold-300',
+    live: 'bg-live-500 text-stage-50 hover:bg-live-400 font-bold shadow-[0_6px_20px_-8px_rgba(228,87,46,0.8)]',
+    mint: 'bg-mint-500 text-stage-950 hover:bg-mint-400 font-bold',
+    dim: 'bg-stage-700 text-stage-200 hover:bg-stage-600',
+  }[variant];
+  const s = { sm: 'px-3 py-1.5 text-xs', md: 'px-4 py-2.5 text-sm', lg: 'px-6 py-3.5 text-[15px]' }[size];
+  return (
+    <button
+      className={`btn-press inline-flex items-center justify-center gap-2 rounded-lg ${v} ${s} disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none ${className}`}
+      {...rest}
+    >{children}</button>
+  );
+}
+
+export function Card({ className = '', children }: { className?: string; children: ReactNode }) {
+  return <div className={`rounded-xl border border-stage-700 bg-stage-850/80 ${className}`}>{children}</div>;
+}
+
+export function Chip({ tone = 'gold', children, className = '' }: { tone?: 'gold' | 'mint' | 'live' | 'plain' | 'dim'; children: ReactNode; className?: string }) {
+  const t = {
+    gold: 'border-gold-500/40 bg-gold-500/10 text-gold-300',
+    mint: 'border-mint-500/40 bg-mint-500/10 text-mint-300',
+    live: 'border-live-500/50 bg-live-500/10 text-live-400',
+    plain: 'border-stage-600 bg-stage-800 text-stage-200',
+    dim: 'border-stage-700 bg-stage-850 text-stage-400',
+  }[tone];
+  return (
+    <span className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 font-mono text-[10.5px] font-semibold uppercase tracking-[0.12em] ${t} ${className}`}>
+      {children}
+    </span>
+  );
+}
+
+/** «Штампованная» печать — для статусов оплаты/выплаты. */
+export function Stamp({ children, tone = 'mint' }: { children: ReactNode; tone?: 'mint' | 'gold' | 'live' }) {
+  const c = tone === 'mint' ? 'border-mint-400 text-mint-300' : tone === 'gold' ? 'border-gold-500 text-gold-400' : 'border-live-500 text-live-400';
+  return (
+    <span className={`inline-block -rotate-3 rounded border-2 border-dashed px-2.5 py-1 font-display text-[11px] font-bold uppercase tracking-[0.18em] ${c}`}>
+      {children}
+    </span>
+  );
+}
+
+export function Field({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <label className="block">
+      <span className="mb-1.5 block font-mono text-[10.5px] font-semibold uppercase tracking-[0.16em] text-stage-400">{label}</span>
+      {children}
+    </label>
+  );
+}
+
+export function TextInput(props: InputHTMLAttributes<HTMLInputElement>) {
+  const { className = '', ...rest } = props;
+  return (
+    <input
+      className={`w-full rounded-lg border border-stage-600 bg-stage-800 px-3 py-2 text-sm text-stage-50 outline-none transition-colors placeholder:text-stage-500 focus:border-gold-500/70 ${className}`}
+      {...rest}
+    />
+  );
+}
+
+/* ---------------- Анимированные числа ---------------- */
+
+export function useAnimatedNumber(value: number, dur = 650): number {
+  const [disp, setDisp] = useState(value);
+  const fromRef = useRef(value);
+  useEffect(() => {
+    const from = fromRef.current;
+    if (from === value) return;
+    fromRef.current = value;
+    const t0 = performance.now();
+    let raf = 0;
+    const step = (t: number) => {
+      const k = Math.min(1, (t - t0) / dur);
+      const e = 1 - Math.pow(1 - k, 3);
+      setDisp(from + (value - from) * e);
+      if (k < 1) raf = requestAnimationFrame(step);
+    };
+    raf = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(raf);
+  }, [value, dur]);
+  return disp;
+}
+
+export function Money({ value, className = '' }: { value: number; className?: string }) {
+  const v = useAnimatedNumber(value);
+  return <span className={`tabular-nums ${className}`}>{fmtMoney(Math.round(v))}</span>;
+}
+
+export function Bar({ frac, tone = 'gold', className = '' }: { frac: number; tone?: 'gold' | 'live' | 'mint'; className?: string }) {
+  const c = tone === 'gold' ? 'bg-gold-500' : tone === 'live' ? 'bg-live-500' : 'bg-mint-500';
+  return (
+    <div className={`h-1.5 w-full overflow-hidden rounded-full bg-stage-700 ${className}`}>
+      <div className={`h-full rounded-full ${c} transition-[width] duration-500`} style={{ width: `${Math.max(0, Math.min(1, frac)) * 100}%` }} />
+    </div>
+  );
+}

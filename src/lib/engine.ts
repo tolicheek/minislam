@@ -87,6 +87,9 @@ export type Action =
   | { type: 'TOGGLE_JUROR'; id: string }
   | { type: 'SET_CFG'; patch: Partial<EventCfg> }
   | { type: 'PAYOUT'; method: 'auto' | 'manual' }
+  | { type: 'REGISTER'; person: Person }
+  | { type: 'PAY'; id: string }
+  | { type: 'STOP_PERF' }
   | { type: 'RESET' };
 
 /* ---------------- Алгоритм расчёта балла (ТЗ, п.4) ---------------- */
@@ -244,7 +247,7 @@ export function initialState(): SlamState {
 function selectJury(s: SlamState): string[] {
   const pool = s.people.filter(p =>
     p.wantsJudge && p.checkedIn && (p.role === 'spectator' || s.cfg.poetsCanJudge));
-  const cap = s.cfg.maxJudges ?? 7;
+  const cap = s.cfg.maxJudges ?? pool.length;
   return pool.slice(0, cap).map(p => p.id);
 }
 
@@ -410,8 +413,44 @@ export function reducer(s: SlamState, a: Action): SlamState {
       return { ...s, jury: [...s.jury, a.id], feed: pushFeed(s.feed, msg('sys', `${p.name} включён(а) в жюри`)) };
     }
 
-    case 'SET_CFG':
+    case 'SET_CFG': {
+      if (a.patch.anonymousJury !== undefined && s.phase === 'voting') {
+        return { ...s, feed: pushFeed(s.feed, msg('sys', 'Анонимность жюри нельзя менять во время голосования')) };
+      }
       return { ...s, cfg: { ...s.cfg, ...a.patch }, feed: pushFeed(s.feed, msg('sys', 'Настройки мероприятия обновлены')) };
+    }
+
+    case 'REGISTER': {
+      if (a.person.role === 'poet' && s.cfg.maxPoets) {
+        const poets = s.people.filter(p => p.role === 'poet').length;
+        if (poets >= s.cfg.maxPoets) {
+          return { ...s, feed: pushFeed(s.feed, msg('sys', `Регистрация отклонена: лимит поэтов (${s.cfg.maxPoets}) исчерпан`)) };
+        }
+      }
+      return {
+        ...s, people: [...s.people, a.person],
+        feed: pushFeed(s.feed, msg('ws', `Новая регистрация: ${a.person.name} (${a.person.role === 'poet' ? 'поэт' : 'зритель'})`)),
+      };
+    }
+
+    case 'PAY': {
+      const t = s.people.find(p => p.id === a.id);
+      if (!t || t.paid) return s;
+      const fee = t.role === 'poet' ? s.cfg.poetFee : s.cfg.spectatorFee;
+      return {
+        ...s, people: s.people.map(p => p.id === a.id ? { ...p, paid: true } : p),
+        feed: pushFeed(s.feed, msg('pay', `${t.name}: взнос ${fee} ₽ оплачен через эквайринг, QR-билет выдан`)),
+      };
+    }
+
+    case 'STOP_PERF': {
+      if (s.phase !== 'performing') return s;
+      const poet = currentPoet(s);
+      return {
+        ...s, timeLeft: 0, phase: 'voting', perfId: s.perfId + 1, voteDeadline: Date.now() + 18000,
+        feed: pushFeed(s.feed, msg('sys', `Организатор остановил таймер: «${poet?.poems?.[s.round - 1] ?? ''}» — жюри голосует`)),
+      };
+    }
 
     case 'PAYOUT': {
       if (s.phase !== 'final' && s.phase !== 'paid') return s;
