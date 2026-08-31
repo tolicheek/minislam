@@ -1,1 +1,161 @@
 @import "tailwindcss";
+
+@theme {
+  --font-display: "Unbounded", "Manrope", sans-serif;
+  --font-body: "Manrope", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+
+  --color-stage-950: #120d08;
+  --color-stage-900: #17110b;
+  --color-stage-850: #1d1610;
+  --color-stage-800: #241b13;
+  --color-stage-700: #33271b;
+  --color-stage-600: #4a3a28;
+  --color-stage-500: #6b573f;
+  --color-stage-400: #8a745a;
+  --color-stage-300: #b09a7c;
+  --color-stage-200: #d6c5a8;
+  --color-stage-100: #efe4cf;
+  --color-stage-50: #f7f0e1;
+
+  --color-gold-300: #ffd98a;
+  --color-gold-400: #ffc96b;
+  --color-gold-500: #e8a33d;
+  --color-gold-600: #c07f22;
+
+  --color-live-400: #ff7a52;
+  --color-live-500: #e4572e;
+  --color-live-600: #c23f1d;
+
+  --color-mint-300: #9adcb9;
+  --color-mint-400: #6cc39a;
+  --color-mint-500: #46a377;
+}
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: var(--font-body);
+  background-color: var(--color-stage-900);
+  color: var(--color-stage-100);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection { background: rgba(232, 163, 61, 0.35); color: #fff7e8; }
+
+*::-webkit-scrollbar { width: 10px; height: 10px; }
+*::-webkit-scrollbar-track { background: #17110b; }
+*::-webkit-scrollbar-thumb { background: #33271b; border-radius: 8px; border: 2px solid #17110b; }
+*::-webkit-scrollbar-thumb:hover { background: #4a3a28; }
+
+/* ---------- ambient stage ---------- */
+.bg-stage-ambient {
+  background:
+    radial-gradient(1100px 620px at 18% -10%, rgba(232, 163, 61, 0.16), transparent 60%),
+    radial-gradient(900px 540px at 88% 4%, rgba(228, 87, 46, 0.10), transparent 62%),
+    radial-gradient(760px 700px at 60% 115%, rgba(70, 163, 119, 0.07), transparent 60%),
+    #17110b;
+}
+.noise-overlay {
+  position: fixed; inset: 0; z-index: 70; pointer-events: none; opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+.spotlight {
+  position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none;
+}
+.spot-a { animation: spotDriftA 16s ease-in-out infinite alternate; }
+.spot-b { animation: spotDriftB 21s ease-in-out infinite alternate; }
+@keyframes spotDriftA {
+  from { transform: translate3d(-4%, -2%, 0) scale(1); opacity: 0.7; }
+  to   { transform: translate3d(6%, 4%, 0) scale(1.15); opacity: 1; }
+}
+@keyframes spotDriftB {
+  from { transform: translate3d(3%, 2%, 0) scale(1.1); opacity: 0.85; }
+  to   { transform: translate3d(-5%, -3%, 0) scale(0.95); opacity: 0.6; }
+}
+.curtain-top {
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(120, 30, 18, 0.5) 0 26px,
+    rgba(78, 18, 10, 0.55) 26px 52px
+  );
+  mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+  -webkit-mask-image: linear-gradient(to bottom, black 0%, transparent 100%);
+}
+
+/* ---------- signature motion ---------- */
+@keyframes tickerScroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.ticker-track { animation: tickerScroll 36s linear infinite; }
+.ticker-track:hover { animation-play-state: paused; }
+
+@keyframes popIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.82); }
+  60% { opacity: 1; transform: translateY(-2px) scale(1.06); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+.pop-in { animation: popIn 0.45s cubic-bezier(0.22, 1.2, 0.36, 1) both; }
+
+@keyframes scoreReveal {
+  0% { opacity: 0; transform: scale(0.4); filter: blur(6px); }
+  70% { opacity: 1; transform: scale(1.12); filter: blur(0); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.score-reveal { animation: scoreReveal 0.7s cubic-bezier(0.2, 1.1, 0.3, 1) both; }
+
+@keyframes livePulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.8); }
+}
+.live-dot { animation: livePulse 1.3s ease-in-out infinite; }
+
+@keyframes urgentPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(228, 87, 46, 0.5); }
+  50% { box-shadow: 0 0 0 14px rgba(228, 87, 46, 0); }
+}
+.urgent-pulse { animation: urgentPulse 0.9s ease-out infinite; }
+
+@keyframes fadeUp { from { opacity: 0; transform: translateY(18px); } to { opacity: 1; transform: translateY(0); } }
+.fade-up { animation: fadeUp 0.6s cubic-bezier(0.2, 0.9, 0.3, 1) both; }
+
+.reveal-init { opacity: 0; transform: translateY(26px); }
+.reveal-in { opacity: 1; transform: translateY(0); transition: opacity 0.7s ease, transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1); }
+
+@keyframes confettiFall {
+  0% { transform: translate3d(0, -10vh, 0) rotate(0deg); opacity: 1; }
+  100% { transform: translate3d(var(--cx, 0), 105vh, 0) rotate(var(--cr, 540deg)); opacity: 0.7; }
+}
+.confetti-piece { animation: confettiFall var(--cd, 3.4s) linear var(--cw, 0s) infinite; }
+
+@keyframes ringGlow {
+  0%, 100% { filter: drop-shadow(0 0 6px rgba(232, 163, 61, 0.25)); }
+  50% { filter: drop-shadow(0 0 22px rgba(232, 163, 61, 0.55)); }
+}
+.ring-glow { animation: ringGlow 2.4s ease-in-out infinite; }
+
+@keyframes marqueeBar { from { width: 100%; } to { width: 0%; } }
+
+@keyframes scanLine {
+  0% { top: 6%; opacity: 0; } 12% { opacity: 1; }
+  88% { opacity: 1; } 100% { top: 92%; opacity: 0; }
+}
+.scan-line { animation: scanLine 2.2s ease-in-out infinite; }
+
+@keyframes blinkCursor { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+.blink-cursor { animation: blinkCursor 1s step-end infinite; }
+
+.card-hover { transition: transform 0.3s cubic-bezier(0.2, 0.9, 0.3, 1), border-color 0.3s, background-color 0.3s, box-shadow 0.3s; }
+.card-hover:hover { transform: translateY(-3px); border-color: rgba(232, 163, 61, 0.45); box-shadow: 0 14px 40px -18px rgba(0,0,0,0.8); }
+
+.btn-press { transition: transform 0.12s ease, box-shadow 0.2s ease, background-color 0.2s, color 0.2s, border-color 0.2s, opacity 0.2s; }
+.btn-press:active:not(:disabled) { transform: scale(0.96); }
+
+.drag-ghost { opacity: 0.35; }
+.drag-over { outline: 2px dashed rgba(232, 163, 61, 0.7); outline-offset: -2px; }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .ticker-track, .spot-a, .spot-b, .live-dot, .ring-glow, .scan-line, .confetti-piece { animation: none !important; }
+  .pop-in, .score-reveal, .fade-up, .urgent-pulse { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+  .reveal-init { opacity: 1; transform: none; }
+  .card-hover, .btn-press, .reveal-in { transition: none !important; }
+}
